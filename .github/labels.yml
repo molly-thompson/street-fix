@@ -1,0 +1,39 @@
+- name: "type: feature"
+  color: "00887a"
+  description: "New feature or capability"
+
+- name: "type: bug"
+  color: "d73a4a"
+  description: "Unexpected bug or failure"
+
+- name: "type: chore"
+  color: "cfd3d7"
+  description: "Maintenance, config, or infrastructure tasks"
+
+- name: "type: docs"
+  color: "0075ca"
+  description: "Documentation changes only"
+
+- name: "type: refactor"
+  color: "8f5cf2"
+  description: "Code improvement with no functional changes"
+
+- name: "priority: high"
+  color: "ff1493"
+  description: "Urgent issue or blocking dependency"
+
+- name: "priority: medium"
+  color: "fbca04"
+  description: "Standard backlog priority"
+
+- name: "priority: low"
+  color: "0e8a16"
+  description: "Minor enhancement or nice-to-have"
+
+- name: "status: blocked"
+  color: "e99695"
+  description: "Progress is blocked by an external issue or decision"
+
+- name: "status: needs-triage"
+  color: "fef2c0"
+  description: "Needs initial review or clarification"
