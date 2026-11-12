@@ -21,6 +21,9 @@ INSTALLED_APPS = [
     "allauth.account",
     "cloudinary",
     # Local
+    "intake",
+    "employees",
+    "analytics",
 ]
 
 MIDDLEWARE = [
