@@ -45,8 +45,8 @@ def test_base_template_loads_ui_kit_before_runtime_theme(client: Client) -> None
     content = response.content.decode()
 
     assert "uikit/uikit.min" in content
-    assert "css/new-theme" in content
-    assert content.index("uikit/uikit.min") < content.index("css/new-theme")
+    assert "css/theme" in content
+    assert content.index("uikit/uikit.min") < content.index("css/theme")
 
 
 def test_form_intake_view_resolves_to_correct_view_class() -> None:
