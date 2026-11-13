@@ -20,10 +20,12 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "cloudinary",
+    "colorfield",
     # Local
     "intake",
     "employees",
     "analytics",
+    "site_settings",
 ]
 
 MIDDLEWARE = [
@@ -60,6 +62,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "site_settings.context_processors.theme_settings",
             ],
         },
     },

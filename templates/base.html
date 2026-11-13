@@ -5,9 +5,22 @@
   <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta
+      content="A Content Management System for street reporting."
+      name="description"
+    >
     <title>{% block title %}Project{% endblock %}</title>
     <link href="{% static 'uikit/uikit.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+    {% if theme_css_vars %}
+      <style>
+        :root {
+          {% for name, value in theme_css_vars.items %}
+            {{ name }}: {{ value }};
+          {% endfor %}
+        }
+      </style>
+    {% endif %}
   </head>
   <body class="uk-flex uk-flex-column uk-height-viewport">
     <nav
