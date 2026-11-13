@@ -1,0 +1,79 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta
+      content="A Content Management System for street reporting."
+      name="description"
+    >
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
+    {% if favicon_url %}
+      <link href="{{ favicon_url }}" rel="icon">
+    {% endif %}
+    <link href="{% static 'uikit/uikit.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+    {% if theme_css_vars %}
+      <style>
+        :root {
+          {% for name, value in theme_css_vars.items %}
+            {{ name }}: {{ value }};
+          {% endfor %}
+        }
+      </style>
+    {% endif %}
+  </head>
+  <body class="uk-flex uk-flex-column uk-height-viewport">
+    <nav
+      class="uk-navbar-container uk-navbar uk-padding uk-padding-remove-vertical"
+      uk-navbar
+    >
+      <div class="uk-navbar-left">
+        <a class="uk-navbar-item uk-logo" href="{% url 'intake:form_intake' %}">
+          {% if navbar_brand_icon %}
+            <span
+              class="uk-margin-small-right"
+              aria-hidden="true"
+              uk-icon="icon: {{ navbar_brand_icon }}"
+            ></span>
+          {% endif %}
+          {{ site_name }}
+        </a>
+      </div>
+      <div class="uk-navbar-right">
+        <ul class="uk-navbar-nav">
+          <li><a href="{% url 'intake:form_intake' %}">Intake</a></li>
+          <li><a href="{% url 'employees:dashboard' %}">Employees</a></li>
+          <li><a href="{% url 'analytics:overview' %}">Analytics</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="uk-section uk-container uk-flex-auto">
+      {% if messages %}
+        <div class="messages" uk-alert>
+          {% for message in messages %}
+            <div class="uk-alert uk-alert-{{ message.tags }}" role="alert">
+              <a class="uk-alert-close" uk-close></a>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="uk-section uk-section-muted uk-section-small">
+      <div class="uk-container uk-text-center">
+        <small>© {% now "Y" %} {{ site_name }}. All rights reserved.</small>
+      </div>
+    </footer>
+
+    <script src="{% static 'uikit/uikit.min.js' %}"></script>
+    <script src="{% static 'uikit/uikit-icons.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

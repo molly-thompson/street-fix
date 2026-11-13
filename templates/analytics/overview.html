@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Overview{% endblock %}
+
+{% block content %}
+  <div class="uk-grid-match uk-child-width-1-1@m" uk-grid>
+    <div class="uk-width-1-1">
+      <div class="uk-card uk-card-default uk-card-body">
+        <h2 class="uk-card-title">Analytics Overview</h2>
+        <p class="uk-text-lead">Welcome to the Analytics Overview</p>
+        <p>This dashboard displays key metrics, charts, and summary statistics for data analysis and reporting.</p>
+        <hr class="uk-divider-icon">
+        <div
+          class="uk-grid-match uk-child-width-1-2@s uk-child-width-1-4@m uk-text-center"
+          uk-grid
+        >
+          <div>
+            <div class="uk-card uk-card-primary uk-card-body">
+              <h5 class="uk-card-title">Total Views</h5>
+              <p class="uk-text-display">0</p>
+            </div>
+          </div>
+          <div>
+            <div class="uk-card uk-card-success uk-card-body">
+              <h5 class="uk-card-title">Conversions</h5>
+              <p class="uk-text-display">0</p>
+            </div>
+          </div>
+          <div>
+            <div class="uk-card uk-card-warning uk-card-body">
+              <h5 class="uk-card-title">Revenue</h5>
+              <p class="uk-text-display">$0</p>
+            </div>
+          </div>
+          <div>
+            <div class="uk-card uk-card-secondary uk-card-body">
+              <h5 class="uk-card-title">Users</h5>
+              <p class="uk-text-display">0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

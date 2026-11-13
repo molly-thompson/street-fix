@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Form Intake{% endblock %}
+
+{% block content %}
+  <div class="uk-grid-match uk-child-width-1-1@m" uk-grid>
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h2 class="uk-card-title">Form Intake</h2>
+        <p class="uk-text-lead">Welcome to the Form Intake System</p>
+        <p>This is the main landing page for submitting and managing form submissions.</p>
+        <hr class="uk-divider-icon">
+        <div class="uk-flex uk-flex-wrap uk-flex-center uk-gap">
+          <a class="uk-button uk-button-primary" href="#">Submit New Form</a>
+          <a class="uk-button uk-button-default" href="#">View Submissions</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
