@@ -11,6 +11,9 @@ class ThemeContext(TypedDict):
     """Template variables used to configure the runtime theme."""
 
     theme_css_vars: dict[str, str]
+    site_name: str
+    favicon_url: str
+    navbar_brand_icon: str
 
 
 OPTIONAL_THEME_FIELDS = {
@@ -34,10 +37,15 @@ OPTIONAL_THEME_FIELDS = {
 
 
 def theme_settings(request: HttpRequest) -> ThemeContext:
-    """Expose configured theme tokens to every Django template."""
+    """Expose configured branding and theme tokens to every Django template."""
     settings = ThemeSettings.objects.filter(pk=1).first()
     if settings is None:
-        return {"theme_css_vars": {}}
+        return {
+            "site_name": "Project",
+            "favicon_url": "",
+            "navbar_brand_icon": "",
+            "theme_css_vars": {},
+        }
 
     css_vars = {
         "--theme-primary": settings.primary_color,
@@ -51,4 +59,9 @@ def theme_settings(request: HttpRequest) -> ThemeContext:
         if value:
             css_vars[variable_name] = value
 
-    return {"theme_css_vars": css_vars}
+    return {
+        "site_name": settings.site_name,
+        "favicon_url": settings.favicon.url if settings.favicon else "",
+        "navbar_brand_icon": settings.navbar_brand_icon,
+        "theme_css_vars": css_vars,
+    }

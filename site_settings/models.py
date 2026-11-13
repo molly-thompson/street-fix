@@ -2,11 +2,17 @@
 
 from typing import Any
 
+from cloudinary.models import CloudinaryField
 from coloraide import Color
 from colorfield.fields import ColorField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
+
+SITE_NAME_VALIDATOR = RegexValidator(
+    regex=r"\S",
+    message="Enter a site name containing at least one non-whitespace character.",
+)
 
 RADIUS_VALIDATOR = RegexValidator(
     regex=r"^(?:0|(?:\d+(?:\.\d+)?)(?:px|rem|em))$",
@@ -18,10 +24,39 @@ DEFAULT_SUCCESS_COLOR = "#166534"
 DEFAULT_WARNING_COLOR = "#92400e"
 DEFAULT_DANGER_COLOR = "#b91c1c"
 
+NAVBAR_BRAND_ICON_CHOICES = (
+    ("", "No icon"),
+    ("home", "Home"),
+    ("user", "User"),
+    ("info", "Info"),
+    ("search", "Search"),
+    ("settings", "Settings"),
+    ("world", "World"),
+    ("chevron-down", "Chevron down"),
+    ("triangle-down", "Triangle down"),
+)
+
 
 class ThemeSettings(models.Model):
     """The singleton theme configuration for the site."""
 
+    site_name = models.CharField(
+        max_length=100,
+        default="Project",
+        validators=[SITE_NAME_VALIDATOR],
+    )
+    favicon = CloudinaryField(
+        "favicon",
+        resource_type="image",
+        blank=True,
+        null=True,
+    )
+    navbar_brand_icon = models.CharField(
+        max_length=20,
+        choices=NAVBAR_BRAND_ICON_CHOICES,
+        blank=True,
+        default="",
+    )
     primary_color = ColorField(
         "primary color",
         max_length=7,

@@ -1,13 +1,130 @@
 """Tests for persisted theme settings and template integration."""
 
 import pytest
+from cloudinary import CloudinaryResource
+from cloudinary import config as cloudinary_config
 from colorfield.widgets import ColorWidget
+from django import forms
 from django.contrib.admin.sites import AdminSite
 from django.core.exceptions import ValidationError
 from django.test import Client, RequestFactory
 
 from site_settings.admin import ThemeSettingsAdmin
-from site_settings.models import ThemeSettings
+from site_settings.models import NAVBAR_BRAND_ICON_CHOICES, ThemeSettings
+
+
+def test_site_name_defaults_to_project() -> None:
+    """Use the existing project name until a site name is configured."""
+    assert ThemeSettings().site_name == "Project"
+
+
+@pytest.mark.django_db
+def test_context_uses_default_branding_without_settings_row(client: Client) -> None:
+    """Render safe defaults when the settings singleton has not been created."""
+    content = client.get("/").content.decode()
+
+    assert "Project" in content
+    assert "All rights reserved." in content
+    assert 'uk-icon="icon:' not in content
+    assert 'rel="icon"' not in content
+
+
+def test_rejects_blank_site_name() -> None:
+    """Require the configured site name to contain a non-whitespace character."""
+    settings = ThemeSettings(site_name="   ")
+
+    with pytest.raises(ValidationError):
+        settings.save()
+
+
+def test_site_name_and_brand_icon_render_in_shared_template(
+    client: Client, theme_settings: ThemeSettings
+) -> None:
+    """Render the configured name and decorative icon in the shared branding."""
+    theme_settings.site_name = "StreetFix"
+    theme_settings.navbar_brand_icon = "home"
+    theme_settings.save()
+
+    response = client.get("/")
+    content = response.content.decode()
+
+    assert 'aria-hidden="true"' in content
+    assert 'uk-icon="icon: home"' in content
+    assert "StreetFix" in content
+    assert "© " in content and "StreetFix. All rights reserved." in content
+
+
+def test_blank_brand_icon_does_not_render_icon(
+    client: Client, theme_settings: ThemeSettings
+) -> None:
+    """Do not render an icon when the no-icon choice is selected."""
+    theme_settings.navbar_brand_icon = ""
+    theme_settings.save()
+
+    response = client.get("/")
+
+    assert 'uk-icon="icon:' not in response.content.decode()
+
+
+def test_favicon_renders_only_when_configured(
+    client: Client,
+    theme_settings: ThemeSettings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Render the Cloudinary URL when set and omit the link when unset."""
+    cloudinary_configuration = cloudinary_config()
+    monkeypatch.setattr(
+        cloudinary_configuration, "cloud_name", "test-cloud", raising=False
+    )
+    monkeypatch.setattr(cloudinary_configuration, "secure", True, raising=False)
+    theme_settings.favicon = CloudinaryResource(
+        public_id="branding/favicon",
+        format="png",
+        resource_type="image",
+    )
+    theme_settings.save()
+
+    configured_content = client.get("/").content.decode()
+
+    assert (
+        '<link href="https://res.cloudinary.com/test-cloud/image/upload/v1/'
+        'branding/favicon.png" rel="icon">'
+    ) in configured_content
+
+    theme_settings.favicon = None
+    theme_settings.save()
+
+    unset_content = client.get("/").content.decode()
+
+    assert 'rel="icon"' not in unset_content
+
+
+def test_admin_brand_icon_is_a_dropdown() -> None:
+    """Expose the finite UIkit icon choices through a select control."""
+    request = RequestFactory().get("/admin/")
+    form_class = ThemeSettingsAdmin(ThemeSettings, AdminSite()).get_form(request)
+    form = form_class()
+
+    icon_field = form.fields["navbar_brand_icon"]
+    assert isinstance(icon_field, forms.ChoiceField)
+    assert isinstance(icon_field.widget, forms.Select)
+    assert icon_field.choices == NAVBAR_BRAND_ICON_CHOICES
+    assert ("site_name", "favicon", "navbar_brand_icon") in [
+        tuple(field for field in fieldset["fields"])
+        for _, fieldset in ThemeSettingsAdmin.fieldsets
+    ]
+
+
+def test_admin_navbar_link_is_removed_without_changing_other_links(
+    client: Client, theme_settings: ThemeSettings
+) -> None:
+    """Keep public navigation while removing only the Admin navbar link."""
+    content = client.get("/").content.decode()
+
+    assert '<a href="/admin/">Admin</a>' not in content
+    assert '<a href="/">Intake</a>' in content
+    assert '<a href="/employees/">Employees</a>' in content
+    assert '<a href="/analytics/">Analytics</a>' in content
 
 
 def test_saves_and_exposes_core_and_optional_theme_values(

@@ -12,6 +12,10 @@ class ThemeSettingsAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
 
     fieldsets = [
         (
+            "Branding",
+            {"fields": ("site_name", "favicon", "navbar_brand_icon")},
+        ),
+        (
             "Core theme",
             {"fields": ("primary_color", "background_color", "text_color", "radius")},
         ),

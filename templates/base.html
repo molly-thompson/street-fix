@@ -9,7 +9,10 @@
       content="A Content Management System for street reporting."
       name="description"
     >
-    <title>{% block title %}Project{% endblock %}</title>
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
+    {% if favicon_url %}
+      <link href="{{ favicon_url }}" rel="icon">
+    {% endif %}
     <link href="{% static 'uikit/uikit.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/theme.css' %}" rel="stylesheet">
     {% if theme_css_vars %}
@@ -28,14 +31,22 @@
       uk-navbar
     >
       <div class="uk-navbar-left">
-        <a class="uk-navbar-item uk-logo" href="{% url 'intake:form_intake' %}">Project</a>
+        <a class="uk-navbar-item uk-logo" href="{% url 'intake:form_intake' %}">
+          {% if navbar_brand_icon %}
+            <span
+              class="uk-margin-small-right"
+              aria-hidden="true"
+              uk-icon="icon: {{ navbar_brand_icon }}"
+            ></span>
+          {% endif %}
+          {{ site_name }}
+        </a>
       </div>
       <div class="uk-navbar-right">
         <ul class="uk-navbar-nav">
           <li><a href="{% url 'intake:form_intake' %}">Intake</a></li>
           <li><a href="{% url 'employees:dashboard' %}">Employees</a></li>
           <li><a href="{% url 'analytics:overview' %}">Analytics</a></li>
-          <li><a href="{% url 'admin:index' %}">Admin</a></li>
         </ul>
       </div>
     </nav>
@@ -57,7 +68,7 @@
 
     <footer class="uk-section uk-section-muted uk-section-small">
       <div class="uk-container uk-text-center">
-        <small>© {% now "Y" %} Project. All rights reserved.</small>
+        <small>© {% now "Y" %} {{ site_name }}. All rights reserved.</small>
       </div>
     </footer>
 
