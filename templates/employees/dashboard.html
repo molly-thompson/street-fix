@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Dashboard{% endblock %}
+
+{% block content %}
+  <div class="uk-grid-match uk-child-width-1-1@m" uk-grid>
+    <div class="uk-width-1-1">
+      <div class="uk-card uk-card-default uk-card-body">
+        <h2 class="uk-card-title">Employee Dashboard</h2>
+        <p class="uk-text-lead">Welcome to the Employee Dashboard</p>
+        <p>This dashboard provides an overview of employee information, tasks, and relevant metrics.</p>
+        <hr class="uk-divider-icon">
+        <div class="uk-grid-match uk-child-width-1-3@m uk-text-center" uk-grid>
+          <div>
+            <div class="uk-card uk-card-default uk-card-body">
+              <h3 class="uk-text-primary">0</h3>
+              <p class="uk-text-meta">Total Employees</p>
+            </div>
+          </div>
+          <div>
+            <div class="uk-card uk-card-default uk-card-body">
+              <h3 class="uk-text-success">0</h3>
+              <p class="uk-text-meta">Active Projects</p>
+            </div>
+          </div>
+          <div>
+            <div class="uk-card uk-card-default uk-card-body">
+              <h3 class="uk-text-warning">0</h3>
+              <p class="uk-text-meta">Pending Tasks</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

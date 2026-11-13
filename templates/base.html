@@ -1,0 +1,55 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>{% block title %}Project{% endblock %}</title>
+    <link href="{% static 'uikit/uikit.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+  </head>
+  <body class="uk-flex uk-flex-column uk-height-viewport">
+    <nav
+      class="uk-navbar-container uk-navbar uk-padding uk-padding-remove-vertical"
+      uk-navbar
+    >
+      <div class="uk-navbar-left">
+        <a class="uk-navbar-item uk-logo" href="{% url 'intake:form_intake' %}">Project</a>
+      </div>
+      <div class="uk-navbar-right">
+        <ul class="uk-navbar-nav">
+          <li><a href="{% url 'intake:form_intake' %}">Intake</a></li>
+          <li><a href="{% url 'employees:dashboard' %}">Employees</a></li>
+          <li><a href="{% url 'analytics:overview' %}">Analytics</a></li>
+          <li><a href="{% url 'admin:index' %}">Admin</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="uk-section uk-container uk-flex-auto">
+      {% if messages %}
+        <div class="messages" uk-alert>
+          {% for message in messages %}
+            <div class="uk-alert uk-alert-{{ message.tags }}" role="alert">
+              <a class="uk-alert-close" uk-close></a>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="uk-section uk-section-muted uk-section-small">
+      <div class="uk-container uk-text-center">
+        <small>© {% now "Y" %} Project. All rights reserved.</small>
+      </div>
+    </footer>
+
+    <script src="{% static 'uikit/uikit.min.js' %}"></script>
+    <script src="{% static 'uikit/uikit-icons.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>
