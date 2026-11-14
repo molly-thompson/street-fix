@@ -15,6 +15,7 @@ from .work_models import (
     CancellationReason,
     Priority,
     Urgency,
+    WorkAssignment,
     WorkItem,
     WorkItemComment,
     WorkItemStatus,
@@ -205,3 +206,40 @@ class WorkItemCommentAdmin(admin.ModelAdmin):
     list_display = ("work_item", "author", "created_at")
     list_filter = ("created_at",)
     search_fields = ("content", "author__name")
+
+
+@admin.register(WorkAssignment)
+class WorkAssignmentAdmin(admin.ModelAdmin):
+    """Assignment history in the admin; changes go through ``assign``."""
+
+    list_display = (
+        "work_item",
+        "employee",
+        "is_case_officer",
+        "assigned_by",
+        "assigned_at",
+        "unassigned_at",
+    )
+    list_filter = ("is_case_officer", "employee__department", "assigned_at")
+    search_fields = ("employee__name", "reason")
+    readonly_fields = (
+        "work_item",
+        "employee",
+        "is_case_officer",
+        "assigned_by",
+        "assigned_at",
+        "unassigned_at",
+        "reason",
+    )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        """Keep assignment creation tied to the assign operation."""
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: WorkAssignment | None = None,
+    ) -> bool:
+        """Keep assignment history for attribution."""
+        return False
