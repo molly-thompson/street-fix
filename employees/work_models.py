@@ -260,3 +260,96 @@ class WorkItemComment(models.Model):
     def __str__(self) -> str:
         """Identify the commented work item."""
         return f"Comment on work item {self.work_item_id}"
+
+
+class WorkAssignment(models.Model):
+    """A period during which an employee is responsible for a work item.
+
+    A work item has at most one open assignment (no ``unassigned_at``) at a
+    time. Reassigning closes the open row and adds a new one, so the table
+    keeps the full history of who held the work.
+    """
+
+    work_item = models.ForeignKey(
+        WorkItem,
+        on_delete=models.PROTECT,
+        related_name="assignments",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="work_assignments",
+    )
+    assigned_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        related_name="assignments_made",
+        null=True,
+        blank=True,
+    )
+    assigned_at = models.DateTimeField(default=timezone.now)
+    unassigned_at = models.DateTimeField(null=True, blank=True)
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        """Order assignments chronologically and allow one open row per item."""
+
+        ordering = ("assigned_at", "pk")
+        constraints = (
+            models.UniqueConstraint(
+                fields=("work_item",),
+                condition=models.Q(unassigned_at__isnull=True),
+                name="one_open_assignment_per_work_item",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(unassigned_at__isnull=True)
+                | models.Q(unassigned_at__gte=models.F("assigned_at")),
+                name="assignment_ends_after_it_starts",
+            ),
+        )
+
+    def __str__(self) -> str:
+        """Describe who holds which work item."""
+        return f"{self.employee} on work item {self.work_item_id}"
+
+    @property
+    def is_open(self) -> bool:
+        """Return whether the employee still holds the work item."""
+        return self.unassigned_at is None
+
+    @classmethod
+    @transaction.atomic
+    def assign(
+        cls,
+        work_item: WorkItem,
+        employee: Employee,
+        *,
+        assigned_by: Employee | None = None,
+        reason: str = "",
+    ) -> WorkAssignment:
+        """Give a work item to an employee, closing any open assignment."""
+        WorkItem.objects.select_for_update().get(pk=work_item.pk)
+        current = cls.objects.filter(
+            work_item=work_item, unassigned_at__isnull=True
+        ).first()
+        if current is not None:
+            if current.employee_id == employee.pk:
+                return current
+            current.unassigned_at = timezone.now()
+            current.reason = current.reason or reason
+            current.save(update_fields=("unassigned_at", "reason"))
+        return cls.objects.create(
+            work_item=work_item,
+            employee=employee,
+            assigned_by=assigned_by,
+            reason=reason,
+        )
+
+    def release(self, *, reason: str = "") -> None:
+        """End this assignment without handing the work to anyone else."""
+        if not self.is_open:
+            return
+        self.unassigned_at = timezone.now()
+        if reason:
+            self.reason = reason
+        self.save(update_fields=("unassigned_at", "reason"))
