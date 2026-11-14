@@ -18,6 +18,8 @@ from .work_models import (
     WorkAssignment,
     WorkItem,
     WorkItemComment,
+    WorkItemPhoto,
+    WorkItemReport,
     WorkItemStatus,
     WorkItemStatusHistory,
 )
@@ -242,4 +244,58 @@ class WorkAssignmentAdmin(admin.ModelAdmin):
         obj: WorkAssignment | None = None,
     ) -> bool:
         """Keep assignment history for attribution."""
+        return False
+
+
+class WorkItemPhotoInline(admin.TabularInline):
+    """Read-only photos shown on their report."""
+
+    model = WorkItemPhoto
+    extra = 0
+    can_delete = False
+    readonly_fields = ("tag", "image_url", "uploaded_by", "taken_at")
+
+    def has_add_permission(
+        self,
+        request: HttpRequest,
+        obj: models.Model | None = None,
+    ) -> bool:
+        """Photos come from the field app, not the admin."""
+        return False
+
+
+@admin.register(WorkItemReport)
+class WorkItemReportAdmin(admin.ModelAdmin):
+    """Read-only visit reports with their photos."""
+
+    list_display = ("work_item", "employee", "outcome", "arrived_at", "submitted_at")
+    list_filter = ("outcome", "further_work_needed", "employee__department")
+    search_fields = ("employee__name", "findings", "work_done", "additional_notes")
+    inlines = (WorkItemPhotoInline,)
+    readonly_fields = (
+        "work_item",
+        "employee",
+        "arrived_at",
+        "submitted_at",
+        "outcome",
+        "findings",
+        "work_done",
+        "materials",
+        "further_work_needed",
+        "no_before_photo_reason",
+        "extra_answers",
+        "additional_notes",
+        "ai_summary",
+    )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        """Reports come from the field app, not the admin."""
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: WorkItemReport | None = None,
+    ) -> bool:
+        """Keep visit reports as evidence."""
         return False
