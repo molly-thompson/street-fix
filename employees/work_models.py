@@ -263,11 +263,13 @@ class WorkItemComment(models.Model):
 
 
 class WorkAssignment(models.Model):
-    """A period during which an employee is responsible for a work item.
+    """A period during which an employee works on a work item.
 
-    A work item has at most one open assignment (no ``unassigned_at``) at a
-    time. Reassigning closes the open row and adds a new one, so the table
-    keeps the full history of who held the work.
+    Each row is one person on one job, so a work item can have as many
+    people as it needs. At most one open row per work item is the case
+    officer, who is responsible for the work; everyone else is support.
+    Rows are closed (``unassigned_at``) rather than deleted, so the table
+    keeps the full history of who worked on what.
     """
 
     work_item = models.ForeignKey(
@@ -280,6 +282,7 @@ class WorkAssignment(models.Model):
         on_delete=models.PROTECT,
         related_name="work_assignments",
     )
+    is_case_officer = models.BooleanField(default=False)
     assigned_by = models.ForeignKey(
         Employee,
         on_delete=models.SET_NULL,
@@ -292,14 +295,19 @@ class WorkAssignment(models.Model):
     reason = models.TextField(blank=True)
 
     class Meta:
-        """Order assignments chronologically and allow one open row per item."""
+        """Order assignments chronologically and keep one open case officer."""
 
         ordering = ("assigned_at", "pk")
         constraints = (
             models.UniqueConstraint(
                 fields=("work_item",),
+                condition=models.Q(unassigned_at__isnull=True, is_case_officer=True),
+                name="one_open_case_officer_per_work_item",
+            ),
+            models.UniqueConstraint(
+                fields=("work_item", "employee"),
                 condition=models.Q(unassigned_at__isnull=True),
-                name="one_open_assignment_per_work_item",
+                name="one_open_assignment_per_employee_per_work_item",
             ),
             models.CheckConstraint(
                 condition=models.Q(unassigned_at__isnull=True)
@@ -309,12 +317,13 @@ class WorkAssignment(models.Model):
         )
 
     def __str__(self) -> str:
-        """Describe who holds which work item."""
-        return f"{self.employee} on work item {self.work_item_id}"
+        """Describe who works on which work item."""
+        role = "case officer" if self.is_case_officer else "support"
+        return f"{self.employee} ({role}) on work item {self.work_item_id}"
 
     @property
     def is_open(self) -> bool:
-        """Return whether the employee still holds the work item."""
+        """Return whether the employee is still on the work item."""
         return self.unassigned_at is None
 
     @classmethod
@@ -324,29 +333,41 @@ class WorkAssignment(models.Model):
         work_item: WorkItem,
         employee: Employee,
         *,
+        case_officer: bool = True,
         assigned_by: Employee | None = None,
         reason: str = "",
     ) -> WorkAssignment:
-        """Give a work item to an employee, closing any open assignment."""
+        """Put an employee on a work item as case officer or support.
+
+        Making someone case officer closes the previous case officer's row.
+        Adding support leaves everyone else on the job. Changing an
+        employee's role closes their old row and opens a new one, so the
+        history shows when it changed.
+        """
         WorkItem.objects.select_for_update().get(pk=work_item.pk)
-        current = cls.objects.filter(
-            work_item=work_item, unassigned_at__isnull=True
-        ).first()
-        if current is not None:
-            if current.employee_id == employee.pk:
-                return current
-            current.unassigned_at = timezone.now()
-            current.reason = current.reason or reason
-            current.save(update_fields=("unassigned_at", "reason"))
+        open_rows = cls.objects.filter(work_item=work_item, unassigned_at__isnull=True)
+        existing = open_rows.filter(employee=employee).first()
+        if existing is not None and existing.is_case_officer == case_officer:
+            return existing
+
+        to_close = [existing] if existing is not None else []
+        if case_officer:
+            to_close += list(
+                open_rows.filter(is_case_officer=True).exclude(employee=employee)
+            )
+        for row in to_close:
+            row.release(reason=reason)
+
         return cls.objects.create(
             work_item=work_item,
             employee=employee,
+            is_case_officer=case_officer,
             assigned_by=assigned_by,
             reason=reason,
         )
 
     def release(self, *, reason: str = "") -> None:
-        """End this assignment without handing the work to anyone else."""
+        """Take the employee off the work item."""
         if not self.is_open:
             return
         self.unassigned_at = timezone.now()

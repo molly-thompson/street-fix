@@ -215,15 +215,17 @@ class WorkAssignmentAdmin(admin.ModelAdmin):
     list_display = (
         "work_item",
         "employee",
+        "is_case_officer",
         "assigned_by",
         "assigned_at",
         "unassigned_at",
     )
-    list_filter = ("employee__department", "assigned_at")
+    list_filter = ("is_case_officer", "employee__department", "assigned_at")
     search_fields = ("employee__name", "reason")
     readonly_fields = (
         "work_item",
         "employee",
+        "is_case_officer",
         "assigned_by",
         "assigned_at",
         "unassigned_at",
