@@ -374,3 +374,128 @@ class WorkAssignment(models.Model):
         if reason:
             self.reason = reason
         self.save(update_fields=("unassigned_at", "reason"))
+
+
+class WorkItemReport(models.Model):
+    """An employee's record of one site visit to a work item.
+
+    A report is a draft until ``submit`` sets ``submitted_at``. It can only be
+    submitted with a before photo or a reason why one could not be taken.
+    """
+
+    class Outcome(models.TextChoices):
+        """How the visit ended."""
+
+        FIXED = "FIXED", "Fixed"
+        TEMPORARY_FIX = "TEMPORARY_FIX", "Made safe / temporary fix"
+        FURTHER_WORK = "FURTHER_WORK", "Further work needed"
+        NO_ACCESS = "NO_ACCESS", "Could not access site"
+        NO_FAULT_FOUND = "NO_FAULT_FOUND", "No fault found"
+
+    work_item = models.ForeignKey(
+        WorkItem,
+        on_delete=models.PROTECT,
+        related_name="reports",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="work_item_reports",
+    )
+    arrived_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    outcome = models.CharField(max_length=20, choices=Outcome.choices, blank=True)
+    findings = models.TextField(blank=True)
+    work_done = models.TextField(blank=True)
+    materials = models.TextField(blank=True)
+    further_work_needed = models.BooleanField(default=False)
+    no_before_photo_reason = models.TextField(blank=True)
+    extra_answers = models.JSONField(default=dict, blank=True)
+    additional_notes = models.TextField(blank=True)
+    ai_summary = models.TextField(blank=True)
+
+    class Meta:
+        """List reports in the order visits happened."""
+
+        ordering = ("arrived_at", "pk")
+
+    def __str__(self) -> str:
+        """Identify the reported work item."""
+        return f"Report on work item {self.work_item_id}"
+
+    @property
+    def is_submitted(self) -> bool:
+        """Return whether the report has been submitted."""
+        return self.submitted_at is not None
+
+    def has_before_photo(self) -> bool:
+        """Return whether a before photo is attached."""
+        if self.pk is None:
+            return False
+        return self.photos.filter(tag=WorkItemPhoto.Tag.BEFORE).exists()
+
+    def submission_errors(self) -> dict[str, str]:
+        """Return the reasons the report cannot be submitted yet."""
+        errors: dict[str, str] = {}
+        if not self.outcome:
+            errors["outcome"] = "Choose an outcome for the visit."
+        if not self.work_done.strip() and self.outcome == self.Outcome.FIXED:
+            errors["work_done"] = "Describe the work done."
+        if not self.has_before_photo() and not self.no_before_photo_reason.strip():
+            errors["no_before_photo_reason"] = (
+                "Add a before photo or explain why one could not be taken."
+            )
+        if self.outcome == self.Outcome.FURTHER_WORK and not self.further_work_needed:
+            errors["further_work_needed"] = (
+                "Mark further work as needed for this outcome."
+            )
+        return errors
+
+    def submit(self) -> None:
+        """Validate and submit the report."""
+        if self.is_submitted:
+            raise ValidationError("This report has already been submitted.")
+        errors = self.submission_errors()
+        if errors:
+            raise ValidationError(errors)
+        self.submitted_at = timezone.now()
+        self.save(update_fields=("submitted_at",))
+
+
+class WorkItemPhoto(models.Model):
+    """A before or after photo taken by an employee during a visit."""
+
+    class Tag(models.TextChoices):
+        """When the photo was taken relative to the work."""
+
+        BEFORE = "BEFORE", "Before"
+        AFTER = "AFTER", "After"
+
+    work_item_report = models.ForeignKey(
+        WorkItemReport,
+        on_delete=models.PROTECT,
+        related_name="photos",
+    )
+    uploaded_by = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="work_item_photos",
+    )
+    tag = models.CharField(max_length=10, choices=Tag.choices)
+    image_url = models.URLField(max_length=2048)
+    taken_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        """List photos in the order they were taken."""
+
+        ordering = ("taken_at", "pk")
+        constraints = (
+            models.CheckConstraint(
+                condition=models.Q(tag__in=("BEFORE", "AFTER")),
+                name="work_item_photo_tag_is_before_or_after",
+            ),
+        )
+
+    def __str__(self) -> str:
+        """Describe the photo and its report."""
+        return f"{self.get_tag_display()} photo for report {self.work_item_report_id}"
